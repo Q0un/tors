@@ -51,7 +51,7 @@ bool send_all(int sockfd, char* buffer, int buffer_len) {
 }
 
 bool send_with_len(int sockfd, char* buffer, int buffer_len) {
-    char len_buf[sizeof(buffer_len)];
+    char len_buf[BUFFER_SIZE];
     sprintf(len_buf, "%d", buffer_len);
     if (!send_all(sockfd, len_buf, sizeof(buffer_len))) {
         return false;
