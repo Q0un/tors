@@ -38,6 +38,56 @@ Server servers[MAX_SERVERS];
 Task* free_tasks[MAX_SERVERS];
 int n_free_tasks = 0;
 
+bool send_all(int sockfd, char* buffer, int buffer_len) {
+    int offset = 0;
+    while (offset < buffer_len) {
+        int res = send(sockfd, buffer + offset, buffer_len - offset, 0);
+        if (res <= 0) {
+            return false;
+        }
+        offset += res;
+    }
+    return true;
+}
+
+bool send_with_len(int sockfd, char* buffer, int buffer_len) {
+    char len_buf[sizeof(buffer_len)];
+    sprintf(len_buf, "%d", buffer_len);
+    if (!send_all(sockfd, len_buf, sizeof(buffer_len))) {
+        return false;
+    }
+    if (!send_all(sockfd, buffer, buffer_len)) {
+        return false;
+    }
+    return true;
+}
+
+bool recv_all(int sockfd, char* buffer, int buffer_len) {
+    int offset = 0;
+    while (offset < buffer_len) {
+        int res = recv(sockfd, buffer + offset, buffer_len - offset, 0);
+        if (res <= 0) {
+            return false;
+        }
+        offset += res;
+    }
+    buffer[buffer_len] = '\0';
+    return true;
+}
+
+bool recv_with_len(int sockfd, char* buffer) {
+    char len_buf[sizeof(int) + 1];
+    if (!recv_all(sockfd, len_buf, sizeof(int))) {
+        return false;
+    }
+    int len = 0;
+    sscanf(len_buf, "%d", &len);
+    if (!recv_all(sockfd, buffer, len)) {
+        return false;
+    }
+    return true;
+}
+
 void set_tcp_keepalive(int sockfd, int keep_idle, int keep_interval, int keep_count) {
     int optval = 1;
 
@@ -192,7 +242,7 @@ void send_task(int server_id, Task* task) {
     char buffer[BUFFER_SIZE];
     sprintf(buffer, "%d %lf %lf", task->id, task->l, task->r);
 
-    if (send(servers[server_id].socket, buffer, strlen(buffer), 0) < 0) {
+    if (!send_with_len(servers[server_id].socket, buffer, strlen(buffer))) {
         server_break(server_id);
     }
 }
@@ -262,13 +312,9 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
-            int recv_len = recv(servers[i].socket, buffer, BUFFER_SIZE - 1, 0);
-            if (recv_len < 0) {
-                server_break(i);
-            } else if (recv_len == 0) {
+            if (!recv_with_len(servers[i].socket, buffer)) {
                 server_break(i);
             } else {
-                buffer[recv_len] = '\0';
                 int task_id;
                 double task_res;
                 sscanf(buffer, "%d %lf", &task_id, &task_res);

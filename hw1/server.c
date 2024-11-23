@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <netinet/tcp.h>
+#include <stdbool.h>
 
 #define UDP_PORT 8000
 #define TCP_PORT 8001
@@ -29,6 +30,56 @@ Task* tasks[MAX_TASKS];
 int n_tasks = 0;
 pthread_mutex_t m;
 int client_sock = -1;
+
+bool send_all(int sockfd, char* buffer, int buffer_len) {
+    int offset = 0;
+    while (offset < buffer_len) {
+        int res = send(sockfd, buffer + offset, buffer_len - offset, 0);
+        if (res <= 0) {
+            return false;
+        }
+        offset += res;
+    }
+    return true;
+}
+
+bool send_with_len(int sockfd, char* buffer, int buffer_len) {
+    char len_buf[sizeof(buffer_len)];
+    sprintf(len_buf, "%d", buffer_len);
+    if (!send_all(sockfd, len_buf, sizeof(buffer_len))) {
+        return false;
+    }
+    if (!send_all(sockfd, buffer, buffer_len)) {
+        return false;
+    }
+    return true;
+}
+
+bool recv_all(int sockfd, char* buffer, int buffer_len) {
+    int offset = 0;
+    while (offset < buffer_len) {
+        int res = recv(sockfd, buffer + offset, buffer_len - offset, 0);
+        if (res <= 0) {
+            return false;
+        }
+        offset += res;
+    }
+    buffer[buffer_len] = '\0';
+    return true;
+}
+
+bool recv_with_len(int sockfd, char* buffer) {
+    char len_buf[sizeof(int) + 1];
+    if (!recv_all(sockfd, len_buf, sizeof(int))) {
+        return false;
+    }
+    int len = 0;
+    sscanf(len_buf, "%d", &len);
+    if (!recv_all(sockfd, buffer, len)) {
+        return false;
+    }
+    return true;
+}
 
 void set_tcp_keepalive(int sockfd, int keep_idle, int keep_interval, int keep_count) {
     int optval = 1;
@@ -88,7 +139,7 @@ void* tasks_thread_func(void* vargp) {
         fflush(stdout);
         char response[BUFFER_SIZE];
         sprintf(response, "%d %lf", task->id, res);
-        if (send(client_sock, response, strlen(response), 0) < 0) {
+        if (!send_with_len(client_sock, response, strlen(response))) {
             close(client_sock);
             client_sock = -1;
             printf("BAD RES\n");
@@ -169,13 +220,9 @@ void handle_tcp_connection(int tcp_sock) {
                 continue;
             }
 
-            int recv_len = recv(client_sock, buffer, BUFFER_SIZE - 1, 0);
-            if (recv_len < 0) {
-                break;
-            } else if (recv_len == 0) {
+            if (!recv_with_len(client_sock, buffer)) {
                 break;
             }
-            buffer[recv_len] = '\0';
             printf("%s\n", buffer);
             fflush(stdout);
 
