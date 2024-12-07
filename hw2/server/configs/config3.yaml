@@ -1,0 +1,13 @@
+id: 3
+http_address: ":6002"
+grpc_address: ":7000"
+min_election_timeout: 10
+heartbeat_timeout: 5
+
+grpc_servers:
+  - "node1:7000"
+  - "node2:7000"
+
+http_servers:
+  - ":6000"
+  - ":6001"

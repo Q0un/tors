@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package raft;
+
+option go_package = "proto/raft";
+
+service Raft {
+    rpc AppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse) {}
+
+    rpc RequestVote(RequestVoteRequest) returns (RequestVoteResponse) {}
+}
+////////////////////////////////////////////////////////////////////////////////
+
+message LogEntry {
+    string type = 1;
+    int64 index = 2;
+    int64 term = 3;
+    string key = 4;
+    optional string value = 5;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message AppendEntriesRequest {
+    int64 term = 1;
+    int64 last_entry_index = 2;
+    int64 last_entry_term = 3;
+    int64 leader_commited_index = 4;
+    repeated LogEntry entries = 5;
+}
+
+message AppendEntriesResponse {
+    bool success = 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message RequestVoteRequest {
+    int64 term = 1;
+    int64 last_entry_index = 2;
+    int64 last_entry_term = 3;
+}
+
+message RequestVoteResponse {
+    bool vote_granted = 1;
+}

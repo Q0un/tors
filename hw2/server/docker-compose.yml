@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  node1:
+    build: .
+    command: ["--config", "/configs/config1.yaml"]
+    ports:
+      - "6000:6000"
+    networks:
+      - raft_network
+
+  node2:
+    build: .
+    command: ["--config", "/configs/config2.yaml"]
+    ports:
+      - "6001:6001"
+    networks:
+      - raft_network
+
+  node3:
+    build: .
+    command: ["--config", "/configs/config3.yaml"]
+    ports:
+      - "6002:6002"
+    networks:
+      - raft_network
+
+networks:
+  raft_network:
+    driver: bridge

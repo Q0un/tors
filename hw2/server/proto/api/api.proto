@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package api;
+
+import "google/api/annotations.proto";
+
+option go_package = "proto/api";
+
+service Http {
+    rpc CreateItem(CreateItemRequest) returns (Empty) {
+        option (google.api.http) = {
+            post: "/api/item"
+        };
+    }
+
+    rpc UpdateItem(UpdateItemRequest) returns (Empty) {
+        option (google.api.http) = {
+            put: "/api/item"
+        };
+    }
+
+    rpc DeleteItem(DeleteItemRequest) returns (Empty) {
+        option (google.api.http) = {
+            delete: "/api/item"
+        };
+    }
+
+    rpc GetItem(GetItemRequest) returns (GetItemResponse) {
+        option (google.api.http) = {
+            get: "/api/item"
+        };
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message Empty {
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message CreateItemRequest {
+    string key = 1;
+    string value = 2;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message UpdateItemRequest {
+    string key = 1;
+    string value = 2;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message DeleteItemRequest {
+    string key = 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+message GetItemRequest {
+    string key = 1;
+}
+
+message GetItemResponse {
+    optional string value = 1;
+    bool found = 2;
+}
